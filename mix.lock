@@ -1,0 +1,1 @@
+%{"geo": {:hex, :geo, "1.4.1", "c1d93e12daecf0bac17d8d5b202e3aeed1e772e6ed99b7cc81c270ae54cf57e4", [:mix], [{:ecto, "~> 2.1", [hex: :ecto, optional: true]}, {:poison, "~> 1.5 or ~> 2.0 or ~> 3.0", [hex: :poison, optional: true]}, {:postgrex, "~> 0.13", [hex: :postgrex, optional: true]}]}}
