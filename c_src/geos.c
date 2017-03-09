@@ -205,6 +205,36 @@ intersection(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     return eterm;
 }
 
+static ERL_NIF_TERM
+envelope(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
+{
+    GEOSGeometry **geom1;
+    ERL_NIF_TERM eterm;
+
+    if (argc != 1) {
+        return enif_make_badarg(env);
+    }
+
+    if(!enif_get_resource(env, argv[0], GEOSGEOM_RESOURCE, (void**)&geom1)) {
+        return enif_make_badarg(env);
+    }
+
+    GEOSGeometry **result_geom = \
+        enif_alloc_resource(GEOSGEOM_RESOURCE, sizeof(GEOSGeometry*));
+    *result_geom = GEOSEnvelope(*geom1);
+
+    if (*result_geom == NULL) {
+        eterm = enif_make_atom(env, "undefined");
+    } else {
+        eterm = enif_make_tuple2(env,
+            enif_make_atom(env, "ok"),
+            enif_make_resource(env, result_geom));
+        enif_release_resource(result_geom);
+    }
+    return eterm;
+}
+
+
 /*
 Geom1 = lgeo_geos_geom:to_geom({'LineString', [[4,4],[10,10]]}),
 Geom2 = lgeo_geos_geom:get_centroid_geom(Geom1),
@@ -438,22 +468,25 @@ ERL_NIF_TERM from_geom(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
 
 static ErlNifFunc nif_funcs[] =
 {
-    {"geos_disjoint", 2, disjoint, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_get_centroid", 1, get_centroid, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_intersection", 2, intersection, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_intersects", 2, intersects, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_contains", 2, contains, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_distance", 2, distance, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_is_valid", 1, is_valid, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_to_geom", 1, to_geom, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_from_geom", 1, from_geom, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_topology_preserve_simplify", 2, topology_preserve_simplify, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_buffer", 1, buffer, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"to_geom", 1, to_geom, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"from_geom", 1, from_geom, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"geom_disjoint", 2, disjoint, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"geom_get_centroid", 1, get_centroid, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"geom_intersection", 2, intersection, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"geom_intersects", 2, intersects, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"geom_contains", 2, contains, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"geom_distance", 2, distance, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"geom_is_valid", 1, is_valid, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"geom_topology_preserve_simplify", 2, topology_preserve_simplify, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"geom_envelope", 1, envelope, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+
+    // Buffer
+    {"buffer_op", 1, buffer, ERL_NIF_DIRTY_JOB_CPU_BOUND},
 
     // Prepared Geometries
-    {"geos_prepare", 1, prepare, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-    {"geos_prepared_contains", 2, prepared_contains, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"to_prepared", 1, prepare, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"prepared_contains", 2, prepared_contains, ERL_NIF_DIRTY_JOB_CPU_BOUND},
     //{"prepared_contains_properly", 2, prepared_contains_properly},
 };
 
-ERL_NIF_INIT(Elixir.Geos, nif_funcs, &load, NULL, NULL, unload);
+ERL_NIF_INIT(Elixir.Geos.Nif, nif_funcs, &load, NULL, NULL, unload);

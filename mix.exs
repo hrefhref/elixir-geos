@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Compile.Nif do
   @shortdoc "Compiles GEOS NIF"
 
   def run(_) do
-    {result, _error_code} = System.cmd("gmake", ["priv/geos.so"], stderr_to_stdout: true)
+    {result, _error_code} = System.cmd("gmake", [], stderr_to_stdout: true)
     Mix.shell.info result
   end
 end

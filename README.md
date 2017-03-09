@@ -34,14 +34,15 @@ end
 
 ## Usage
 
+The `Geos` module uses `Geos.Geometry`, envelope, `Geos.Buffer` and
+`Geos.PreparedGeometry` to provide performance-optimized operations like `contains?`.
+
 Support casting from [Geo](https://github.com/bryanjos/geo) structs:
 
 ```
-geos1 = GEOS.from_geo(%Geo.MultiPolygon{…})
-geos2 = GEOS.from_geo(%Geo.MultiPolygon{…})
-GEOS.contains?(geos1, geos2)
+geos1 = Geos.from_geo(%Geo.MultiPolygon{…})
+geos2 = Geos.from_geo(%Geo.MultiPolygon{…})
+Geos.contains?(geos1, geos2)
 ```
 
-Unless `false` is passed as a second argument to `GEOS.from_geo`, a prepared geometry will be generated too.
-`GEOS.contains?` will use the prepared geometry if it has been generated.
 

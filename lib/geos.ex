@@ -1,56 +1,73 @@
 defmodule Geos do
-  @on_load :init
-
-  defstruct [:name, :geom, :prep]
-
+  @moduledoc """
+  Wrapper of `Geos.Geometry`, envelopes, `Geos.Buffer` and `Geos.PreparedGeometry` for improved performance.
+  """
   alias __MODULE__
+  alias Geos.{Geometry, PreparedGeometry, Buffer}
 
-  def init do
-    :erlang.load_nif(:code.priv_dir(:geos) ++ '/geos', 0)
-  end
+  defstruct [:geometry, :prepared, :envelope]
+  @type t :: %Geos{geometry: Geos.Geometry.t, prepared: Geos.PreparedGeometry.t, envelope: Geos.Geometry.t}
 
-  def contains?(%Geos{prep: nil, geom: geom1}, %Geos{geom: geom2}) do
-    geos_contains(geom1, geom2)
-  end
-  def contains?(%Geos{prep: prep}, %Geos{geom: geom2}) do
-    geos_prepared_contains(prep, geom2)
-  end
-  def distance(%Geos{geom: geom1}, %Geos{geom: geom2}) do
-    geos_distance(geom1, geom2)
-  end
+  @spec from_geo(Geo.Geometry.t, Keyword.t) :: Geos.t
+  @doc """
+  Loads the `geometry` into Geos, and:
 
-  def from_geo(geo, prepare \\ true) do
-    %{"type" => type, "coordinates" => coords} = Geo.JSON.encode(geo)
-    geom = geos_to_geom({String.to_atom(type), coords})
-    geom = if geos_is_valid(geom) do
+  * ensures it's a valid geometry, otherwise applies `Geos.Buffer.op/1`,
+  * build a `Geos.Envelope` for the geometry,
+  * build a `Geos.PreparedGeometry`.
+
+  Other functions in `Geos` module will make use of the envelope/prepared geometry directly.
+  """
+  def from_geo(geo, options \\ []) do
+    geom = Geometry.from_geo(geo)
+    buffer? = Keyword.get(options, :buffer, true)
+    prepare? = Keyword.get(options, :prepare, true)
+    envelope? = Keyword.get(options, :envelope, true)
+
+    geometry = if Geometry.valid?(geom) do
       geom
     else
-      {:ok, geom} = geos_buffer(geom)
+      {:ok, geom} = Buffer.op(geom)
       geom
     end
 
-    prep = if prepare do
-      {:ok, prep} = geos_prepare(geom)
-      prep
-    else
-      nil
+    prepared = if prepare? do
+      {:ok, prepared} = PreparedGeometry.from_geometry(geometry)
+      prepared
     end
 
-    %__MODULE__{geom: geom, prep: prep}
+    envelope = if envelope? do
+      {:ok, envelope} = Geometry.envelope(geometry)
+      envelope
+    end
+
+    %Geos{geometry: geometry, prepared: prepared, envelope: envelope}
   end
 
-  def geos_to_geom(_geom), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_from_geom(_geom), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_disjoint(_geom1, _geom2), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_get_centroid(_geom), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_intersection(_geom1, _geom2), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_intersects(_geom1, _geom2), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_contains(_geom1, _geom2), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_topology_preserve_simplify(_geom, _int), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_is_valid(_geom), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_buffer(_geom), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_distance(_geom1, _geom2), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_prepare(_geom), do: :erlang.nif_error(:nif_not_loaded)
-  def geos_prepared_contains(_prepared_geom, _geom), do: :erlang.nif_error(:not_loaded)
+  @spec contains?(Geos.t, Geos.t) :: boolean
+  @doc "Check if `geom1` contains `geom2`. Uses the envelopes and prepared geometry of `geom1` if they has been computed."
+  def contains?(geom1 = %Geos{envelope: envelope1}, geom2 = %Geos{envelope: envelope2}) do
+    contains?(geom1, geom2, Geometry.contains?(envelope1, envelope2))
+  end
+  def contains?(geom1, geom2), do: contains?(geom1, geom2, true)
+
+  @spec distance(Geos.t, Geos.t) :: float
+  def distance(%Geos{geometry: geom1}, %Geos{geometry: geom2}) do
+    Geometry.distance?(geom1, geom2)
+  end
+
+  defp contains?(%Geos{prepared: nil, geometry: geom1}, %Geos{geometry: geom2}, true) do
+    Geometry.contains?(geom1, geom2)
+  end
+  defp contains?(%Geos{prepared: prep}, %Geos{geometry: geom2}, true) do
+    PreparedGeometry.contains?(prep, geom2)
+  end
+  defp contains?(_, _, false), do: false
+
+  defimpl Inspect, for: Geos do
+    def inspect(_geos, _) do
+      "#Geos<>"
+    end
+  end
 
 end
