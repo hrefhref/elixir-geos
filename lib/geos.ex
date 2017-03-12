@@ -53,7 +53,7 @@ defmodule Geos do
 
   @spec distance(Geos.t, Geos.t) :: float
   def distance(%Geos{geometry: geom1}, %Geos{geometry: geom2}) do
-    Geometry.distance?(geom1, geom2)
+    Geometry.distance(geom1, geom2)
   end
 
   defp contains?(%Geos{prepared: nil, geometry: geom1}, %Geos{geometry: geom2}, true) do
