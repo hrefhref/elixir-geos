@@ -6,6 +6,7 @@ GEOS_LDFLAGS = $(shell geos-config --clibs)
 
 CFLAGS += -I$(ERLANG_PATH)
 CFLAGS += -Isrc
+CFLAGS += -Ic_src
 CFLAGS += $(GEOS_CFLAGS)
 
 LDFLAGS += $(GEOS_LDFLAGS)
@@ -14,7 +15,7 @@ LDFLAGS += $(GEOS_LDFLAGS)
 all: priv/geos.so
 
 priv/geos.so: c_src/geos.c
-	clang $(CFLAGS) -shared $(LDFLAGS) -o $@ c_src/geos.c
+	$(CC) $(CFLAGS) -shared $(LDFLAGS) $^ -o $@
 
 clean:
 	$(RM) -r priv/geos.so*

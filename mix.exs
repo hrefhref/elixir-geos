@@ -1,12 +1,3 @@
-defmodule Mix.Tasks.Compile.Nif do
-  @shortdoc "Compiles GEOS NIF"
-
-  def run(_) do
-    {result, _error_code} = System.cmd("gmake", [], stderr_to_stdout: true)
-    Mix.shell.info result
-  end
-end
-
 defmodule Geos.Mixfile do
   use Mix.Project
 
@@ -16,7 +7,7 @@ defmodule Geos.Mixfile do
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     compilers: [:nif, :elixir, :app],
+     compilers: [:elixir_make] ++ Mix.compilers,
      deps: deps()]
   end
 
@@ -38,6 +29,9 @@ defmodule Geos.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:geo, "~> 1.0"}]
+    [
+      {:elixir_make, "~> 0.4", runtime: false},
+      {:geo, "~> 1.0"},
+    ]
   end
 end
